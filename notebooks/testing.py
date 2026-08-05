@@ -3,7 +3,7 @@ from pathlib import Path
 
 import polars as pl
 
-from fed3_data_aggregator_v2 import *
+from fed3tidy import *
 
 # %%
 proj_dir = Path("..")

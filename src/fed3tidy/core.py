@@ -60,10 +60,16 @@ def process_one_datafile(
 
 
 def create_master_df(
-    data_files: list[Path], metadata_fields: list[str], experiment_length: pl.Expr
+    data_files: list[Path],
+    metadata_fields: list[str],
+    experiment_length: pl.Expr,
+    debug: bool = False,
 ) -> pl.DataFrame:
     df_list = []
     for file in data_files:
+        if debug:
+            print(file.name)
+
         df_list.append(process_one_datafile(file, metadata_fields, experiment_length))
 
     master_df = pl.concat(df_list, how="vertical")
