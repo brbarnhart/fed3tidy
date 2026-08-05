@@ -1,0 +1,75 @@
+from pathlib import Path
+
+import polars as pl
+
+
+def get_raw_data_files(raw_data_path: Path) -> list[Path]:
+    files = list(raw_data_path.glob("*.csv"))  # or "**/*.csv" if recursive, etc.
+
+    if not files:
+        raise ValueError(
+            f"No FED3 CSV files found in '{raw_data_path}'.\n"
+            "Please make sure:\n"
+            "  - The folder contains at least one file ending in .csv\n"
+            "  - The files follow the expected FED3 naming format (e.g. containing '_FED' or similar)\n"
+        )
+
+    return files
+
+
+def get_file_metadata(path: Path, metadata_fields: list[str]) -> dict[str, str]:
+    file_fields = path.stem.split("_")
+    file_fields = [s.strip() for s in file_fields]
+
+    file_fields_main = file_fields[0 : len(metadata_fields)]
+
+    file_fields_extra = file_fields[len(metadata_fields) :]
+    file_fields_extra = "_".join(file_fields_extra)
+
+    metadata = dict(zip(metadata_fields, file_fields_main))
+    metadata["extra"] = file_fields_extra
+
+    return metadata
+
+
+def process_one_datafile(
+    path: Path, metadata_fields: list[str], experiment_length: pl.Expr
+) -> pl.DataFrame:
+    # 0) Read in the data csv
+    df = pl.read_csv(path)
+
+    # 1) Create and filter time_since_start column
+    df = (
+        df.rename({"MM:DD:YYYY hh:mm:ss": "datetime"})
+        .with_columns(datetime=pl.col("datetime").str.to_datetime("%m/%d/%Y %H:%M:%S"))
+        .with_columns(time_since_start=pl.col("datetime") - pl.col("datetime").min())
+        .filter(pl.col("time_since_start") <= experiment_length)
+    )
+
+    # 2) Pull metadata out of file name
+    metadata = get_file_metadata(path, metadata_fields)
+
+    # 3) Prepend metadata to data df
+    df = df.with_columns([pl.lit(value).alias(key) for key, value in metadata.items()])
+
+    meta_cols = list(metadata.keys())
+    df = df.select(meta_cols + [c for c in df.columns if c not in meta_cols])
+
+    # 4) Return the dataframe
+    return df
+
+
+def create_master_df(
+    data_files: list[Path], metadata_fields: list[str], experiment_length: pl.Expr
+) -> pl.DataFrame:
+    df_list = []
+    for file in data_files:
+        df_list.append(process_one_datafile(file, metadata_fields, experiment_length))
+
+    master_df = pl.concat(df_list, how="vertical")
+
+    return master_df
+
+
+def load_master_df(path: Path) -> pl.DataFrame:
+    return pl.read_csv(path, try_parse_dates=True)
