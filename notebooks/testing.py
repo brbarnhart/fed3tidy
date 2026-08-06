@@ -17,7 +17,7 @@ print(data_files[0].stem.split("_"))
 # %%
 metadata_fields = ["id", "sex", "stim", "diet", "cohort"]
 
-df = create_master_df(data_files, metadata_fields, pl.duration(minutes=30), debug=True)
+df = create_master_df(data_files, metadata_fields, pl.duration(minutes=30))
 
 # %%
 grouping_cols = ["id", "stim", "diet"]

@@ -41,20 +41,11 @@ def summarize_data(
     breakpoint_cutoff: pl.Expr,
     active_only_breakpoint: bool = True,
 ) -> pl.DataFrame:
-
-    active_poke: str = df.select(pl.col("Active_Poke").first()).item()
-    inactive_poke: str
-
-    if active_poke == "Left":
-        inactive_poke = "Right"
-    else:
-        inactive_poke = "Left"
-
     # total: active pokes, inactive pokes, pellets, breakpoint
     summary = df.group_by(group_by_columns).agg(
         # *[pl.col(x).first() for x in list(set(metadata_fields) - set(group_by_cols))],
-        pl.col(f"{active_poke}_Poke_Count").max().alias("active_pokes"),
-        pl.col(f"{inactive_poke}_Poke_Count").max().alias("inactive_pokes"),
+        pl.col("Active_Poke_Count").max().alias("active_pokes"),
+        pl.col("Inactive_Poke_Count").max().alias("inactive_pokes"),
         pl.col("Pellet_Count").max().alias("pellet_count"),
     )
 

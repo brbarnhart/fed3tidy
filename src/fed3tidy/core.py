@@ -42,8 +42,22 @@ def process_one_datafile(
     df = pl.read_csv(path)
 
     # 1) Create and filter time_since_start column
+    active_poke: str = df.select(pl.col("Active_Poke").first()).item()
+    inactive_poke: str
+
+    if active_poke == "Left":
+        inactive_poke = "Right"
+    else:
+        inactive_poke = "Left"
+
     df = (
-        df.rename({"MM:DD:YYYY hh:mm:ss": "datetime"})
+        df.rename(
+            {
+                "MM:DD:YYYY hh:mm:ss": "datetime",
+                f"{active_poke}_Poke_Count": "Active_Poke_Count",
+                f"{inactive_poke}_Poke_Count": "Inactive_Poke_Count",
+            }
+        )
         .with_columns(
             datetime=pl.col("datetime").str.to_datetime(
                 "%m/%d/%Y %H:%M:%S", strict=strict_datetime
