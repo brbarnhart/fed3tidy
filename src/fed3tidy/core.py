@@ -33,7 +33,10 @@ def get_file_metadata(path: Path, metadata_fields: list[str]) -> dict[str, str]:
 
 
 def process_one_datafile(
-    path: Path, metadata_fields: list[str], experiment_length: pl.Expr
+    path: Path,
+    metadata_fields: list[str],
+    experiment_length: pl.Expr,
+    strict_datetime: bool = True,
 ) -> pl.DataFrame:
     # 0) Read in the data csv
     df = pl.read_csv(path)
@@ -41,7 +44,11 @@ def process_one_datafile(
     # 1) Create and filter time_since_start column
     df = (
         df.rename({"MM:DD:YYYY hh:mm:ss": "datetime"})
-        .with_columns(datetime=pl.col("datetime").str.to_datetime("%m/%d/%Y %H:%M:%S"))
+        .with_columns(
+            datetime=pl.col("datetime").str.to_datetime(
+                "%m/%d/%Y %H:%M:%S", strict=strict_datetime
+            )
+        )
         .with_columns(time_since_start=pl.col("datetime") - pl.col("datetime").min())
         .filter(pl.col("time_since_start") <= experiment_length)
     )
@@ -64,13 +71,21 @@ def create_master_df(
     metadata_fields: list[str],
     experiment_length: pl.Expr,
     debug: bool = False,
+    strict_datetime: bool = True,
 ) -> pl.DataFrame:
     df_list = []
     for file in data_files:
         if debug:
             print(file.name)
 
-        df_list.append(process_one_datafile(file, metadata_fields, experiment_length))
+        _data = process_one_datafile(
+            file, metadata_fields, experiment_length, strict_datetime
+        )
+
+        if debug:
+            print(f"Shape: {_data.shape}")
+
+        df_list.append(_data)
 
     master_df = pl.concat(df_list, how="vertical")
 

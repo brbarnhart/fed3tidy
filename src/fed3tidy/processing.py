@@ -20,7 +20,9 @@ def calc_breakpoint(
     df: pl.DataFrame, breakpoint_cutoff: pl.Expr, active_only: bool
 ) -> int:
 
-    poke_intervals = calc_poke_intervals(df=df, active_only=active_only)
+    poke_intervals = df.join(
+        calc_poke_intervals(df=df, active_only=active_only), on="datetime"
+    )
     breaks = poke_intervals.filter(pl.col("poke_interval") >= breakpoint_cutoff)
 
     breakpoint: int
