@@ -9,8 +9,8 @@ def calc_poke_intervals(df: pl.DataFrame, active_only: bool) -> pl.DataFrame:
         poke_events = ["Left", "LeftDuringDispense", "Right", "RightDuringDispense"]
 
     active_intervals = df.filter(pl.col("Event").is_in(poke_events)).select(
-        "datetime",
-        (pl.col("datetime") - pl.col("datetime").shift(1)).alias("poke_interval"),
+        "Datetime",
+        (pl.col("Datetime") - pl.col("Datetime").shift(1)).alias("Poke_Interval"),
     )
 
     return active_intervals
@@ -21,9 +21,9 @@ def calc_breakpoint(
 ) -> int:
 
     poke_intervals = df.join(
-        calc_poke_intervals(df=df, active_only=active_only), on="datetime"
+        calc_poke_intervals(df=df, active_only=active_only), on="Datetime"
     )
-    breaks = poke_intervals.filter(pl.col("poke_interval") >= breakpoint_cutoff)
+    breaks = poke_intervals.filter(pl.col("Poke_Interval") >= breakpoint_cutoff)
 
     breakpoint: int
 
@@ -44,16 +44,16 @@ def summarize_data(
     # total: active pokes, inactive pokes, pellets, breakpoint
     summary = df.group_by(group_by_columns).agg(
         # *[pl.col(x).first() for x in list(set(metadata_fields) - set(group_by_cols))],
-        pl.col("Active_Poke_Count").max().alias("active_pokes"),
-        pl.col("Inactive_Poke_Count").max().alias("inactive_pokes"),
-        pl.col("Pellet_Count").max().alias("pellet_count"),
+        pl.col("Active_Poke_Count").max().alias("Total_Active_Pokes"),
+        pl.col("Inactive_Poke_Count").max().alias("Total_Inactive_Pokes"),
+        pl.col("Pellet_Count").max().alias("Total_Pellet_Count"),
     )
 
     additional_columns = df.group_by(group_by_columns).map_groups(
         lambda group: pl.DataFrame(
             {
                 **{col: group[col][0] for col in group_by_columns},
-                "breakpoint": calc_breakpoint(
+                "Breakpoint": calc_breakpoint(
                     group, breakpoint_cutoff, active_only=active_only_breakpoint
                 ),
             }

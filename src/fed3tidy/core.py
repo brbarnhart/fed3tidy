@@ -27,7 +27,7 @@ def get_file_metadata(path: Path, metadata_fields: list[str]) -> dict[str, str]:
     file_fields_extra = "_".join(file_fields_extra)
 
     metadata = dict(zip(metadata_fields, file_fields_main))
-    metadata["extra"] = file_fields_extra
+    metadata["Extra"] = file_fields_extra
 
     return metadata
 
@@ -53,18 +53,18 @@ def process_one_datafile(
     df = (
         df.rename(
             {
-                "MM:DD:YYYY hh:mm:ss": "datetime",
+                "MM:DD:YYYY hh:mm:ss": "Datetime",
                 f"{active_poke}_Poke_Count": "Active_Poke_Count",
                 f"{inactive_poke}_Poke_Count": "Inactive_Poke_Count",
             }
         )
         .with_columns(
-            datetime=pl.col("datetime").str.to_datetime(
+            Datetime=pl.col("Datetime").str.to_datetime(
                 "%m/%d/%Y %H:%M:%S", strict=strict_datetime
             )
         )
-        .with_columns(time_since_start=pl.col("datetime") - pl.col("datetime").min())
-        .filter(pl.col("time_since_start") <= experiment_length)
+        .with_columns(Time_Since_Start=pl.col("Datetime") - pl.col("Datetime").min())
+        .filter(pl.col("Time_Since_Start") <= experiment_length)
     )
 
     # 2) Pull metadata out of file name

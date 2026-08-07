@@ -15,13 +15,14 @@ data_files = get_raw_data_files(data_dir)
 # %%
 print(data_files[0].stem.split("_"))
 # %%
-metadata_fields = ["id", "sex", "stim", "diet", "cohort"]
+metadata_fields = ["ID", "Sex", "Stim", "Diet", "Cohort"]
 
 df = create_master_df(data_files, metadata_fields, pl.duration(minutes=30))
 
 # %%
-grouping_cols = ["id", "stim", "diet"]
+grouping_cols = ["ID", "Stim", "Diet"]
 print(summarize_data(df, metadata_fields, pl.duration(minutes=30)))
 
 
 # %%
+print(summarize_data(df, metadata_fields, pl.duration(minutes=30)).columns)
